@@ -58,7 +58,7 @@
 
     .scanlines{
       position:fixed;inset:0;
-      background-image:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.12) 2px,rgba(0,0,0,.12) 4px);
+      background-image:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.055) 3px,rgba(0,0,0,.055) 4px);
       pointer-events:none;z-index:200;
     }
 
@@ -153,11 +153,11 @@
       letter-spacing:1px;
       transition:color .45s;
     }
-    .timer.low{color:var(--red);animation:timerGlow .5s ease-in-out infinite}
+    .timer.low{color:var(--red);animation:none}
     .timer-bar{
       height:4px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:3px;
     }
-    .timer-fill{height:100%;background:var(--green);transition:width 1s linear,background .45s}
+    .timer-fill{height:100%;background:var(--green);transition:background .45s}
     .reset-btn{
       background:transparent;border:none;color:var(--dim);
       font-size:7px;letter-spacing:1px;cursor:pointer;font-family:inherit;padding:0;margin-top:3px;
@@ -191,12 +191,9 @@
     .cam::after{
       content:"";
       position:absolute;
-      top:50%;left:50%;
-      width:130px;height:70px;
-      transform-origin:left center;
-      background:linear-gradient(90deg,rgba(212,166,66,.20),transparent 75%);
-      clip-path:polygon(0 45%,100% 0,100% 100%,0 55%);
-      animation:cameraSweep 3.6s ease-in-out infinite;
+      inset:0;
+      background:linear-gradient(135deg, rgba(212,166,66,.07), transparent 60%);
+      opacity:.8;
     }
     .cam-label{
       position:absolute;left:7px;top:5px;
@@ -263,7 +260,7 @@
       border-radius:1px;
       background:var(--gold);
       box-shadow:0 0 6px var(--goldA);
-      animation:cpPulse 2.2s ease-in-out infinite;
+      animation:none;
       z-index:2;
     }
     .cp-diamond.done{
@@ -287,7 +284,7 @@
     .exit.ready{
       border-color:var(--green);
       color:var(--green);
-      animation:exitPulse 1.6s ease-in-out infinite;
+      animation:none;
     }
 
     .guard{
@@ -295,7 +292,7 @@
       border-radius:50%;
       background:radial-gradient(circle at 35% 30%,#ff7070,#c01818);
       box-shadow:0 0 8px var(--redA),0 0 16px var(--redA);
-      animation:guardPulse .85s ease-in-out infinite;
+      animation:none;
       display:flex;align-items:center;justify-content:center;
       font-size:clamp(4px,1.5vmin,11px);
       z-index:4;
@@ -367,7 +364,7 @@
       font-family:'Share Tech Mono',monospace;
     }
     .modal.correct{border-color:var(--green);box-shadow:0 0 44px rgba(34,197,94,.14)}
-    .modal.wrong{border-color:var(--red);box-shadow:0 0 44px rgba(239,68,68,.14);animation:shake .42s ease}
+    .modal.wrong{border-color:var(--red);box-shadow:0 0 44px rgba(239,68,68,.14);animation:none}
     .modal-head{border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:12px}
     .modal-title-row{display:flex;justify-content:space-between;align-items:flex-start}
     .modal-label{color:var(--gold);font-size:8px;letter-spacing:3px;margin-bottom:4px}
@@ -381,7 +378,7 @@
       font-variant-numeric:tabular-nums;
       letter-spacing:2px;
     }
-    .modal-time.low{color:var(--red);animation:timerGlow .5s ease-in-out infinite}
+    .modal-time.low{color:var(--red);animation:none}
     .tries{display:flex;gap:5px;margin-top:8px;align-items:center}
     .tries span{color:var(--dim);font-size:8px;letter-spacing:2px}
     .try-dot{
@@ -851,7 +848,6 @@
       if(mainTimer){
         mainTimer.textContent = `⏱ ${mm}:${ss}`;
         mainTimer.style.color = timerClr;
-        mainTimer.classList.toggle("low", timer<=30);
       }
 
       const fill = document.querySelector(".timer-fill");
@@ -863,7 +859,6 @@
       const modalTime = document.querySelector(".modal-time");
       if(modalTime){
         modalTime.textContent = `${mm}:${ss}`;
-        modalTime.classList.toggle("low", timer<=30);
       }
     }
 
@@ -937,15 +932,19 @@
 
       if(ok){
         state.pSt = "correct";
-        render();
+        showModalResult("correct", "✓ ACCESS GRANTED — +5s ADDED");
         setTimeout(()=>{
           game.cleared.add(cp);
           game.activeCp = null;
-          game.timer = Math.min(game.timer+60, TIMER_MAX);
+          game.timer = Math.min(game.timer+5, TIMER_MAX);
           state.pSt = "idle";
-          showNtfy(`✓ CHECKPOINT ${cp} CLEARED +60s ⏱`);
+          state.pSel = null;
+          state.pInp = "";
+          state.ntfy = `✓ CHECKPOINT ${cp} CLEARED +5s ⏱`;
+          clearTimeout(ntfyId);
+          ntfyId = setTimeout(()=>{state.ntfy=""; render();},2400);
           render();
-        },1400);
+        },900);
       } else {
         state.pSt = "wrong";
         let gp = game.guardPos;
@@ -961,9 +960,44 @@
         const newHint = nt <= 0;
         game.tries = newHint ? 3 : nt;
         game.hintShown = game.hintShown || newHint;
-        render();
-        setTimeout(()=>{state.pSt="idle"; render();},950);
+        showModalResult("wrong", `✗ INCORRECT — GUARD +2 STEPS${!game.hintShown ? ` · ${game.tries} WRONG UNTIL HINT` : ""}`);
+        setTimeout(()=>{
+          state.pSt="idle";
+          if(newHint) render();
+          else clearModalResult();
+        },850);
       }
+    }
+
+    function showModalResult(type, message){
+      const modal = document.querySelector(".modal");
+      if(!modal) return;
+      modal.classList.remove("correct","wrong");
+      modal.classList.add(type);
+
+      const oldMsg = document.getElementById("inlineResult");
+      if(oldMsg) oldMsg.remove();
+
+      const submit = document.getElementById("submitPuzzle");
+      const msg = document.createElement("div");
+      msg.id = "inlineResult";
+      msg.className = type === "correct" ? "correct-box" : "wrong-box";
+      msg.textContent = message;
+      if(submit){
+        submit.insertAdjacentElement("beforebegin", msg);
+        submit.disabled = true;
+      } else {
+        modal.appendChild(msg);
+      }
+    }
+
+    function clearModalResult(){
+      const modal = document.querySelector(".modal");
+      if(modal) modal.classList.remove("correct","wrong");
+      const msg = document.getElementById("inlineResult");
+      if(msg) msg.remove();
+      const submit = document.getElementById("submitPuzzle");
+      if(submit) submit.disabled = false;
     }
 
     function confirmFinalCode(){
@@ -1012,7 +1046,7 @@
             <div class="brief-card">
               <div class="brief-title" style="color:var(--dim)">◆ RULES</div>
               <div>
-                <div>⏱ Start: <strong style="color:var(--amber)">5 min</strong> · Solve checkpoint → <strong style="color:var(--green)">+60s</strong></div>
+                <div>⏱ Start: <strong style="color:var(--amber)">5 min</strong> · Solve checkpoint → <strong style="color:var(--green)">+5s</strong></div>
                 <div>👁 Guard moves <strong style="color:var(--red)">1 step per player step</strong> via shortest path</div>
                 <div>✗ Wrong answer → Guard <strong style="color:var(--red)">+2 extra steps</strong></div>
                 <div>🔴 Red glow on paths = guard is nearby</div>
@@ -1184,7 +1218,7 @@
 
             ${hint ? `<div class="hint-box">💡 HINT: ${esc(p.hint)}</div>` : ""}
             ${wrong ? `<div class="wrong-box">✗ INCORRECT — GUARD +2 STEPS${!hint ? ` · ${tries} WRONG UNTIL HINT` : ""}</div>` : ""}
-            ${ok ? `<div class="correct-box">✓ ACCESS GRANTED — +60s ADDED</div>` : ""}
+            ${ok ? `<div class="correct-box">✓ ACCESS GRANTED — +5s ADDED</div>` : ""}
             ${!ok ? `<button id="submitPuzzle" class="confirm" ${can ? "" : "disabled"}>CONFIRM ANSWER ▶</button>` : ""}
           </div>
         </div>
@@ -1196,7 +1230,10 @@
         document.querySelectorAll(".choice").forEach(btn=>{
           btn.onclick = () => {
             state.pSel = Number(btn.dataset.choice);
-            render();
+            document.querySelectorAll(".choice").forEach(b => b.classList.remove("selected"));
+            btn.classList.add("selected");
+            const submit = document.getElementById("submitPuzzle");
+            if(submit) submit.disabled = false;
           };
         });
       } else {
@@ -1204,7 +1241,11 @@
         if(input){
           input.focus();
           input.setSelectionRange(input.value.length,input.value.length);
-          input.oninput = e => { state.pInp = e.target.value; };
+          input.oninput = e => {
+            state.pInp = e.target.value;
+            const submit = document.getElementById("submitPuzzle");
+            if(submit) submit.disabled = state.pInp.trim().length === 0;
+          };
           input.onkeydown = e => { if(e.key==="Enter") submitPuzzle(); };
         }
       }
@@ -1285,7 +1326,7 @@
       app.innerHTML = `
         <main class="end-screen">
           <div class="end-card">
-            <div style="color:var(--red);font-size:10px;letter-spacing:4px;margin-bottom:12px;animation:blink 1.2s infinite">✗ ✗ ✗ MISSION FAILED ✗ ✗ ✗</div>
+            <div style="color:var(--red);font-size:10px;letter-spacing:4px;margin-bottom:12px;animation:none">✗ ✗ ✗ MISSION FAILED ✗ ✗ ✗</div>
             <div class="sword-title">S.W.O.R.D.</div>
 
             <div class="brief-card" style="border-color:#580000;text-align:center">
