@@ -90,7 +90,7 @@
       position:fixed;top:54px;left:50%;transform:translateX(-50%);
       padding:8px 18px;border-radius:999px;
       font-size:10px;letter-spacing:2px;z-index:300;white-space:nowrap;
-      animation:slideIn .18s ease;
+      animation:none;
       backdrop-filter:blur(8px);
     }
 
@@ -341,15 +341,13 @@
 
     .modal-back{
       position:fixed;inset:0;
-      background:
-        linear-gradient(135deg,rgba(2,6,14,.97),rgba(4,11,22,.98)),
-        radial-gradient(circle at 50% 30%,rgba(212,166,66,.10),transparent 42%);
+      background:rgba(2,6,14,.98);
       display:flex;
       align-items:center;
       justify-content:center;
       z-index:150;
       padding:12px;
-      animation:slideIn .18s ease;
+      animation:none;
     }
     .modal{
       background:#070d1a;
@@ -590,13 +588,9 @@
       font-size:26px;
       font-weight:900;
       box-shadow:0 0 18px rgba(34,197,94,.18);
-      animation:codePop .5s ease both;
+      animation:none;
     }
-    .code-digit:nth-child(2){animation-delay:.08s}
-    .code-digit:nth-child(3){animation-delay:.16s}
-    .code-digit:nth-child(4){animation-delay:.24s}
-    .code-digit:nth-child(5){animation-delay:.32s}
-    .disarm-input{
+        .disarm-input{
       width:100%;
       background:#030c16;
       border:1px solid #1a5028;
@@ -1239,8 +1233,6 @@
       } else {
         const input = document.getElementById("textAnswer");
         if(input){
-          input.focus();
-          input.setSelectionRange(input.value.length,input.value.length);
           input.oninput = e => {
             state.pInp = e.target.value;
             const submit = document.getElementById("submitPuzzle");
@@ -1254,16 +1246,14 @@
     }
 
     function renderFinalCode(){
-      const wrong = state.finalStatus === "wrong";
-      const correct = state.finalStatus === "correct";
       app.innerHTML = `
         <main class="end-screen">
           <div class="end-card">
             <div class="small-caps" style="color:var(--green);letter-spacing:4px;margin-bottom:12px">✓ EXTRACTION POINT REACHED</div>
             <div class="sword-title">S.W.O.R.D.</div>
 
-            <div class="final-code-card" style="border-color:${wrong ? P.red : correct ? P.green : "#1a5028"}">
-              <div class="brief-title" style="color:${wrong ? P.red : P.green};text-align:center">FINAL BOMB DISARM CODE</div>
+            <div class="final-code-card">
+              <div class="brief-title" style="color:var(--green);text-align:center">FINAL BOMB DISARM CODE</div>
               <p style="font-size:11px;line-height:1.8;color:var(--txt);margin:0">
                 All checkpoints secured. The facility terminal has released the final five single-digit code.
               </p>
@@ -1272,25 +1262,16 @@
                 ${FINAL_CODE.split("").map(d=>`<div class="code-digit">${d}</div>`).join("")}
               </div>
 
-              <input id="finalInput" class="disarm-input" maxlength="5" inputmode="numeric" value="${esc(state.finalInput)}" placeholder="-----"/>
-              ${wrong ? `<div style="color:var(--red);font-size:10px;letter-spacing:2px;margin-bottom:8px">✗ CODE REJECTED</div>` : ""}
-              ${correct ? `<div style="color:var(--green);font-size:10px;letter-spacing:2px;margin-bottom:8px">✓ DISARM SEQUENCE ACCEPTED</div><div class="access-fill active"><div></div></div>` : ""}
-              ${!correct ? `<button id="confirmFinal" class="primary-btn" style="padding:10px 22px;font-size:10px;letter-spacing:3px">DISARM BOMB ▶</button>` : ""}
+              <div style="color:var(--dim);font-size:10px;line-height:1.8;margin-top:10px">
+                Enter this code on the physical bomb device.
+              </div>
             </div>
+
+            <button class="primary-btn" id="playAgainFromCode" style="padding:10px 24px;font-size:10px;letter-spacing:3px">↺ PLAY AGAIN</button>
           </div>
         </main>
       `;
-      const input = document.getElementById("finalInput");
-      if(input){
-        input.focus();
-        input.oninput = e => {
-          state.finalInput = e.target.value.replace(/\\D/g,"").slice(0,5);
-          input.value = state.finalInput;
-        };
-        input.onkeydown = e => { if(e.key==="Enter") confirmFinalCode(); };
-      }
-      const btn = document.getElementById("confirmFinal");
-      if(btn) btn.onclick = confirmFinalCode;
+      document.getElementById("playAgainFromCode").onclick = startGame;
     }
 
     function renderWin(){
