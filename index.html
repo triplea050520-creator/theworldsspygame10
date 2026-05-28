@@ -179,7 +179,7 @@
       border-radius:6px;
       position:relative;
       overflow:hidden;
-      animation:cctvFlicker 9s infinite;
+      animation:none;
     }
     .cam::before{
       content:"";
@@ -833,8 +833,38 @@
       if(state.game.timer <= 0){
         state.screen = "lose";
         clearInterval(timerId);
+        render();
+        return;
       }
-      render();
+      updateTimerDisplays();
+    }
+
+    function updateTimerDisplays(){
+      if(!state.game) return;
+      const timer = state.game.timer;
+      const mm = String(Math.floor(timer/60)).padStart(2,"0");
+      const ss = String(timer%60).padStart(2,"0");
+      const timerClr = timer>120 ? P.green : timer>60 ? P.amber : P.red;
+      const pct = Math.min((timer/TIMER_MAX)*100,100);
+
+      const mainTimer = document.querySelector(".timer");
+      if(mainTimer){
+        mainTimer.textContent = `⏱ ${mm}:${ss}`;
+        mainTimer.style.color = timerClr;
+        mainTimer.classList.toggle("low", timer<=30);
+      }
+
+      const fill = document.querySelector(".timer-fill");
+      if(fill){
+        fill.style.width = `${pct}%`;
+        fill.style.background = timerClr;
+      }
+
+      const modalTime = document.querySelector(".modal-time");
+      if(modalTime){
+        modalTime.textContent = `${mm}:${ss}`;
+        modalTime.classList.toggle("low", timer<=30);
+      }
     }
 
     function showFlash(m){
@@ -949,7 +979,7 @@
     }
 
     function esc(s){
-      return String(s).replace(/[&<>'"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;" }[c]));
+      return String(s).replace(/\\n/g, "\n").replace(/[&<>'"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;" }[c]));
     }
 
     function render(){
